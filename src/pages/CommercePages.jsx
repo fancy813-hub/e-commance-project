@@ -1,0 +1,19 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { formatNaira } from '../utils/currency'
+
+export function CartPage({ cart, products, subtotal, shipping, total, updateCartQuantity, removeFromCart }) {
+  const cartItems = cart.map((item) => { const product = products.find((entry) => entry.id === item.id); return product ? { ...product, quantity: item.quantity } : null }).filter(Boolean)
+  if (!cartItems.length) return <section className="container content-section empty-state"><h2>Your cart is empty</h2><p>Looks like you haven’t added anything to your bag yet.</p><Link className="primary-button" to="/shop">Explore products</Link></section>
+  return <section className="container content-section cart-layout"><div className="cart-list">{cartItems.map((item) => <article key={item.id} className="cart-item"><img src={item.image} alt={item.name} /><div className="cart-item-info"><h3>{item.name}</h3><p>{item.category}</p><div className="quantity-controls"><button type="button" onClick={() => updateCartQuantity(item.id, -1)}>-</button><span>{item.quantity}</span><button type="button" onClick={() => updateCartQuantity(item.id, 1)}>+</button></div></div><div className="cart-item-price"><strong>{formatNaira(item.price * item.quantity)}</strong><button type="button" className="text-button" onClick={() => removeFromCart(item.id)}>Remove</button></div></article>)}</div><OrderSummary title="Order summary" subtotal={subtotal} shipping={shipping} total={total}><Link className="primary-button full-width" to="/checkout">Proceed to checkout</Link></OrderSummary></section>
+}
+
+function OrderSummary({ title, subtotal, shipping, total, children }) { return <aside className="summary-card"><h3>{title}</h3><div className="summary-row"><span>Subtotal</span><strong>{formatNaira(subtotal)}</strong></div><div className="summary-row"><span>Shipping</span><strong>{formatNaira(shipping)}</strong></div><div className="summary-row total-row"><span>Total</span><strong>{formatNaira(total)}</strong></div>{children}</aside> }
+
+export function CheckoutPage({ user, cart, subtotal, shipping, total }) {
+  const navigate = useNavigate(); const [submitted, setSubmitted] = useState(false); const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', address: '', city: '', country: '' })
+  const handleChange = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+  const handleSubmit = (event) => { event.preventDefault(); setSubmitted(true); window.setTimeout(() => navigate('/'), 1800) }
+  if (!cart.length) return <section className="container content-section empty-state"><h2>Your cart is empty</h2><p>Add some products before checking out.</p><Link className="primary-button" to="/shop">Go shopping</Link></section>
+  return <section className="container content-section checkout-layout"><form className="checkout-form" onSubmit={handleSubmit}><h2>Checkout</h2><label>Full name<input name="name" value={form.name} onChange={handleChange} required /></label><label>Email<input name="email" type="email" value={form.email} onChange={handleChange} required /></label><label>Street address<input name="address" value={form.address} onChange={handleChange} required /></label><div className="form-row"><label>City<input name="city" value={form.city} onChange={handleChange} required /></label><label>Country<input name="country" value={form.country} onChange={handleChange} required /></label></div><button type="submit" className="primary-button full-width" disabled={submitted}>{submitted ? 'Order placed' : 'Place order'}</button></form><OrderSummary title="Payment summary" subtotal={subtotal} shipping={shipping} total={total}>{submitted && <p className="success-text">Thank you! Your order is confirmed.</p>}</OrderSummary></section>
+}
