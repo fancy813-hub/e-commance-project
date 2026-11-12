@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { saveRecentSearch } from '../utils/search'
 
 function Header({ user, cart, favoriteIds, onLogout }) {
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!menuOpen) return undefined
@@ -17,6 +21,17 @@ function Header({ user, cart, favoriteIds, onLogout }) {
       document.body.style.overflow = ''
     }
   }, [menuOpen])
+
+  useEffect(() => {
+    setSearch(new URLSearchParams(location.search).get('search') || '')
+  }, [location.search])
+
+  const handleSearch = (event) => {
+    event.preventDefault()
+    const query = search.trim()
+    if (query) saveRecentSearch(query)
+    navigate(query ? `/shop?search=${encodeURIComponent(query)}` : '/shop')
+  }
 
   return (
     <header className={menuOpen ? 'site-header account-menu-open' : 'site-header'}>
@@ -47,6 +62,11 @@ function Header({ user, cart, favoriteIds, onLogout }) {
             </>}
           </div>
         </nav>
+        <form className="header-search" role="search" onSubmit={handleSearch}>
+          <label className="sr-only" htmlFor="header-search">Search the catalog</label>
+          <input id="header-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products..." />
+          <button className="primary-button" type="submit">Search</button>
+        </form>
         <div className="mobile-header-actions"><Link className="mobile-cart-button" to="/cart" aria-label={`Open cart with ${itemCount} items`}>Cart <span>{itemCount}</span></Link></div>
         <div className="nav-actions">
           {user ? <><Link className="account-pill" to="/profile">Hi, {user.name}</Link><button type="button" className="ghost-button" onClick={onLogout}>Logout</button></> : <><Link className="ghost-button" to="/login">Login</Link><Link className="ghost-button" to="/signup">Sign up</Link></>}
